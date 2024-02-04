@@ -1,0 +1,17 @@
+.AboutContainer{
+    /* text-align: center; */
+    padding: 0px 25px;
+    color:#666;
+    user-select:text
+}
+.AboutContainer a{
+    text-decoration: none;
+    letter-spacing: 2px;
+    color: #8B8E9C;
+    text-shadow: 0px 0px 3px #fff;
+    transition: color 0.2s linear;
+}
+.AboutContainer a:hover {
+    color: #0068b7;
+    text-decoration: none;
+}

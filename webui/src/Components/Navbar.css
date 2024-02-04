@@ -1,0 +1,48 @@
+.placeholder {
+    height: 45px;
+    margin-bottom:10px;
+    /* padding: 5px 20px; */
+}
+.navbar {
+    background-color: #fafafc;
+    color: #8b8e9c;
+    margin: 0;
+    padding: 5px 20px 5px 0px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 45px;
+    z-index: 2;
+    position: fixed;
+    width: 100%;
+}
+.AppTitle {
+    display: flex;
+    align-items: center;
+    padding: 5px 20px;
+    flex-grow: 1;
+}
+.navbar img {
+    height: 33px;
+}
+.navbar ul{
+    display: flex;
+    list-style-type: none;
+    /* flex-grow: 3; */
+}
+
+.navbar li{
+    margin: 0 16px;
+}
+
+.navbar a{
+    text-decoration: none;
+    letter-spacing: 2px;
+    color: #8B8E9C;
+    text-shadow: 0px 0px 3px #fff;
+    transition: color 0.2s linear;
+}
+.navbar a:hover {
+    color: #0068b7;
+    text-decoration: none;
+}

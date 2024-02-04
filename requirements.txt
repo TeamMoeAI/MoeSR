@@ -1,0 +1,10 @@
+onnxruntime-directml
+opencv-python
+# eel 个人修改版 待与开发文档同时发布
+bottle<1.0.0
+bottle-websocket<1.0.0
+gevent
+gevent-websocket<1.0.0
+greenlet>=1.0.0,<2.0.0
+pyparsing>=3.0.0,<4.0.0
+whichcraft~=0.4.1

@@ -1,0 +1,142 @@
+@keyframes move {
+    0% {
+        transform: translateY(0px);
+    }
+    100% {
+        transform: translateY(-1000px);
+        opacity: 0;
+    }
+}
+@keyframes shake {
+    0% {
+        transform: translateX(10px);
+    }
+    50% {
+        transform: translateX(-10px);
+    }
+    100% {
+        transform: translateX(10px);
+    }
+}
+.bg {
+	position: fixed;
+	width: 100%;
+	height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.bg div:nth-child(1) {
+    animation: move ease-in infinite;
+    animation-delay: 2.7s;
+    animation-duration: 6.5s;
+    left: calc(50% + 27*1vw);
+}
+
+.bg div:nth-child(2) {
+    animation: move ease-in infinite;
+    animation-delay: 1.5s;
+    animation-duration: 6.1s;
+    left: calc(50% + -30*1vw);
+}
+
+.bg div:nth-child(3) {
+    animation: move ease-in infinite;
+    animation-delay: 1.5s;
+    animation-duration: 7.9s;
+    left: calc(50% + -17*1vw);
+}
+
+.bg div:nth-child(4) {
+    animation: move ease-in infinite;
+    animation-delay: 3s;
+    animation-duration: 10.8s;
+    left: calc(50% + 1*1vw);
+}
+
+.bg div:nth-child(5) {
+    animation: move ease-in infinite;
+    animation-delay: 0.5s;
+    animation-duration: 9.5s;
+    left: calc(50% + 32*1vw);
+}
+
+.bg div:nth-child(6) {
+    animation: move ease-in infinite;
+    animation-delay: 0.9s;
+    animation-duration: 14.7s;
+    left: calc(50% + 43*1vw);
+}
+
+.bg div:nth-child(7) {
+    animation: move ease-in infinite;
+    animation-delay: 1.7s;
+    animation-duration: 23s;
+    left: calc(50% + 34*1vw);
+}
+
+.bg div:nth-child(8) {
+    animation: move ease-in infinite;
+    animation-delay: 2.3s;
+    animation-duration: 12.6s;
+    left: calc(50% + 12*1vw);
+}
+
+.bg div:nth-child(9) {
+    animation: move ease-in infinite;
+    animation-delay: 1s;
+    animation-duration: 9.2s;
+    left: calc(50% + 3*1vw);
+}
+
+.bg div:nth-child(10) {
+    animation: move ease-in infinite;
+    animation-delay: 2.8s;
+    animation-duration: 20.8s;
+    left: calc(50% + -14*1vw);
+}
+
+.bg div:nth-child(11) {
+    animation: move ease-in infinite;
+    animation-delay: 2.3s;
+    animation-duration: 16s;
+    left: calc(50% + -45*1vw);
+}
+
+.bg div:nth-child(12) {
+    animation: move ease-in infinite;
+    animation-delay: 1.2s;
+    animation-duration: 8.4s;
+    left: calc(50% + -6*1vw);
+}
+
+.bg div:nth-child(2n),
+.bg div:nth-child(7) {
+    background-color: rgba(35, 157, 218, 0.1);
+}
+.item1 {
+    display: block;
+    width: 25px;
+    height: 25px;
+    background-color: rgba(35, 157, 218, 0.4);
+    position: absolute;
+    top: 105vh;
+}
+
+.item2 {
+    display: block;
+    width: 15px;
+    height: 15px;
+    background-color: rgba(35, 157, 218, 0.4);
+    position: absolute;
+    top: 105vh;
+}
+
+.item3 {
+    display: block;
+    width: 8px;
+    height: 8px;
+    background-color: rgba(35, 157, 218, 0.4);
+    position: absolute;
+    top: 105vh;
+}

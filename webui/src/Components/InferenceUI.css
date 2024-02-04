@@ -1,0 +1,68 @@
+.InferUI {
+    text-align: center;
+    color:#666
+}
+.InferUI h3 {
+	font-size: 2.2rem;
+	text-indent: 0.2em;
+	letter-spacing: 0.2em;
+	position: relative;
+	display: inline-block;
+	padding: 0 55px;
+	margin-bottom: 15px;
+    margin-top: 20px;
+    /* font-weight: normal; */
+
+}
+.InferUI h3::before,
+.InferUI h3::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    display: inline-block;
+    width: 45px;
+    height: 2px;
+    background-color: #239dda;
+}
+
+.InferUI h3::before {
+    left: 0;
+}
+
+.InferUI h3::after {
+    right: 0;
+}
+.InferUI strong{
+    color: #7ecef4;
+    /* font-weight: normal; */
+}
+.ConfigureArea {
+    display: flex;
+    justify-content: center;
+}
+.ConfigureArea h4{
+    font-size: 1.2em;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #239dda;
+    letter-spacing: 0.1em;
+    font-weight: normal;
+}
+.InferUI p{
+    margin-right: 10px;
+    white-space: nowrap;
+    /* margin-bottom: 15px; */
+}
+.ModelConfig{
+    width: 40%;
+    margin-right: 5%;
+}
+.Processor{
+    width: 40%;
+}
+.Version{
+    margin-right: 3px;
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    font-size: 0.8em;
+}

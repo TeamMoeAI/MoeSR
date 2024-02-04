@@ -1,0 +1,9 @@
+.HelpContainer{
+    /* text-align: center; */
+    padding: 0px 25px;
+    color:#666
+}
+.HelpContainer strong{
+    color: #7ecef4;
+    /* font-weight: normal; */
+}

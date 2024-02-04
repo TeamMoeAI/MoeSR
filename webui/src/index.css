@@ -1,0 +1,23 @@
+@font-face {
+  font-family: "NotoSerifSC";
+  src:
+    url("../public/NotoSerifSC-Regular-subset.woff2") format("woff2"),
+}
+[class^="MuiInputBase-input"]{
+  color: #666 !important
+}
+#input-image{
+  font-size: 0.76em;
+}
+#output-path{
+  font-size: 0.76em;
+}
+input{
+  color: #666
+}
+body {
+  margin: 0;
+  font-family: 'NotoSerifSC';
+  font-size: 0.96em;
+  user-select: none;
+}
