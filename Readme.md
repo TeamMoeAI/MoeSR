@@ -14,7 +14,7 @@ MoeSR是一个专注于插画/Galgame CG等ACGN领域的图像超分辨率的应
 
 软件截图：
 
-![MoeSR-Screenshot](Readme.assets\MoeSR-Screenshot.png)
+![MoeSR-Screenshot](Readme.assets/MoeSR-Screenshot.png)
 
 ## 如何使用
 
