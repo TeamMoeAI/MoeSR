@@ -1,6 +1,6 @@
 onnxruntime-directml
 opencv-python
-# eel 个人修改版 待与开发文档同时发布
+# eel (modified version)(will explain in the document later)
 bottle<1.0.0
 bottle-websocket<1.0.0
 gevent
