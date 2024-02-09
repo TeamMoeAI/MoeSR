@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 # ---------------------------------node js---------------------------------
 # dependencies
-/node_modules
+*/node_modules
 /.pnp
 .pnp.js
 
@@ -186,3 +186,12 @@ cython_debug/
 
 # ---------------------------------Custom---------------------------------
 *.zip
+webui/config/
+webui/package-lock.json
+webui/scripts
+*.woff2
+icon.png
+test_img
+models
+settings.json
+test.ipynb

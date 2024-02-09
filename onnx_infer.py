@@ -2,6 +2,7 @@ import onnxruntime as ort
 import cv2
 import numpy as np
 import math
+import time
 
 class OnnxSRInfer:
 
@@ -24,6 +25,9 @@ class OnnxSRInfer:
         self.scale = scale
         self.alpha_upsampler = alpha_upsampler
         self.progress_setter = progress_setter
+        self.model_path = model_path
+        self.total_img_num = 1
+        self.processed_img_num = 0
 
     def img_array_norm_expd(self,img):
         img = np.array(img).astype(np.float32) / 255.0
@@ -137,7 +141,7 @@ class OnnxSRInfer:
                 # put tile into output image
                 output[output_start_y:output_end_y,output_start_x:output_end_x,:] \
                     = output_tile[output_start_y_tile:output_end_y_tile,output_start_x_tile:output_end_x_tile,:]
-                self.progress_setter(tile_idx/tiles_x/tiles_y)
+                self.progress_setter(tile_idx/tiles_x/tiles_y,time.time(),self.total_img_num,self.processed_img_num)
 
         return output
     def rgb_process_pipeline(self, image, tile_size):

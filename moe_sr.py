@@ -1,7 +1,9 @@
+
 import re
 import math
 import traceback
 from pathlib import Path
+import json
 
 import eel
 import numpy as np
@@ -21,6 +23,8 @@ class ModelInfo:
 model_list = []
 sr_instance = None
 port = 10721
+last_progress = None
+last_progress_set_time = None
 # Scan models
 model_root = Path('models')
 for algo in ['real-esrgan', 'real-hatgan']:
@@ -44,9 +48,44 @@ def py_get_model_list(algo_name):
     models = [m.name for m in model_list if m.algo == algo_name]
     return models
 
+@eel.expose
+def py_get_settings():
+    setting_file = open('settings.json','r',encoding='utf-8')
+    settings = json.load(setting_file)
+    setting_file.close()
+    return settings
 
-def progress_setter(data):
-    eel.handleSetProgress(round(data*100))
+@eel.expose
+def py_save_settings(new_settings):
+    setting_file = open('settings.json','w',encoding='utf-8')
+    settings = json.dumps(new_settings,ensure_ascii=False)
+    setting_file.write(settings)
+    setting_file.close()
+    return 0
+
+def seconds_to_hms(seconds):
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = seconds % 60
+
+    return f"{int(hours):0>2d}:{int(minutes):0>2d}:{int(seconds):0>2d}"
+
+def progress_setter(progress,current_time,total_img_num,processed_img_num):
+    global last_progress,last_progress_set_time
+    progress_percent = round(progress*100)
+    total_progress_percent = round((processed_img_num+progress)/total_img_num*100)
+    etr_str = '--:--:--'
+    total_etr_str = '--:--:--'
+    if last_progress_set_time:
+        etr = (current_time-last_progress_set_time) * (1-last_progress)/(progress-last_progress)
+        total_etr = (current_time-last_progress_set_time) * (total_img_num-processed_img_num-last_progress)/(progress-last_progress)
+        etr_str = seconds_to_hms(etr)
+        total_etr_str = seconds_to_hms(total_etr)
+    progress_str = f'{progress_percent}% ETR:{etr_str}'
+    total_progress_str = f'{total_progress_percent}% ETR:{total_etr_str}'
+    eel.handleSetProgress(progress_percent,progress_str,total_progress_str)
+    last_progress = progress
+    last_progress_set_time = current_time
 
 
 def show_error(error_text):
@@ -58,7 +97,7 @@ def set_process_state(state):
 
 
 @eel.expose
-def py_run_process(modelName, tileSize, scale, isSkipAlpha, resizeTo: str, inputType, inputImage, outputPath, gpuid):
+def py_run_process(modelName, tileSize, scale, isSkipAlpha, resizeTo: str, inputType, inputImage, outputPath, gpuid,algoName):
     global sr_instance
     try:
         # find model info
@@ -67,17 +106,18 @@ def py_run_process(modelName, tileSize, scale, isSkipAlpha, resizeTo: str, input
         if int(gpuid) >= 0:
             provider_options = [{'device_id': int(gpuid)}]
         for m in model_list:
-            if m.name == modelName:
+            if m.name == modelName and m.algo == algoName:
                 model = m
                 break
         # init or change sr instance
         if not sr_instance:
             sr_instance = OnnxSRInfer(model.path, model.scale, model.name,
                                       provider_options=provider_options, progress_setter=progress_setter)
-        elif sr_instance.name != model.name:
+        elif sr_instance.model_path != model.path:
             del sr_instance
             sr_instance = OnnxSRInfer(model.path, model.scale, model.name,
                                       provider_options=provider_options, progress_setter=progress_setter)
+            print(f'Model Change: {model.path}')
         # skip alpha sr
         if isSkipAlpha:
             sr_instance.alpha_upsampler = 'interpolation'
@@ -92,6 +132,8 @@ def py_run_process(modelName, tileSize, scale, isSkipAlpha, resizeTo: str, input
                 imgs_in.append(f)
         else:
             imgs_in = [inputImage]
+        sr_instance.total_img_num = len(imgs_in)
+        sr_instance.processed_img_num = 0
         # sr process
         for img_in in imgs_in:
             img = cv2.imdecode(np.fromfile(img_in,dtype=np.uint8),cv2.IMREAD_UNCHANGED)
@@ -138,6 +180,7 @@ def py_run_process(modelName, tileSize, scale, isSkipAlpha, resizeTo: str, input
                 final_output_path = Path(outputPath) / f'{img_in_name}_{img_in_ext}_MoeSR_{model.name}.png'
             # cv2.imwrite(str(final_output_path), img_out)
             cv2.imencode('.png',img_out)[1].tofile(final_output_path)
+            sr_instance.processed_img_num += 1
         set_process_state('finish')
     except Exception as e:
         sr_instance = None
@@ -147,3 +190,4 @@ def py_run_process(modelName, tileSize, scale, isSkipAlpha, resizeTo: str, input
 
 
 eel.start('index.html', mode='custom', cmdline_args=['electron/electron.exe', 'electron_app/main.js'], port=port)
+# eel.start('index.html', mode='custom', cmdline_args=['E:/python/MoeSR/electron/electron.exe', 'webui/main.js'], port=port)

@@ -10,36 +10,40 @@ import { Typography } from '@mui/material';
 import { useState, useEffect } from 'react';
 import Alert from '@mui/material/Alert';
 import LoadingButton from '@mui/lab/LoadingButton';
-var devMode = false;
-
-
-function runProcess(modelName, tileSize, scale, isSkipAlpha, resizeTo, inputType, inputImage, outputPath, GPUID) {
-    if (devMode){
-        // for dev
-        console.log(modelName, tileSize, scale, isSkipAlpha, resizeTo, inputType, inputImage, outputPath, GPUID)
+function ProgressTextDisplay({ singleProgressText, totalProgressText, isBatchProcess }) {
+    if (isBatchProcess) {
+        return (
+            <Box>
+                <Typography sx={{ margin: '0px 0px', fontSize: '0.8em' }}>{singleProgressText}</Typography>
+                <Typography sx={{ margin: '0px 0px', fontSize: '0.8em' }}>{totalProgressText}</Typography>
+            </Box>
+        )
     }
-    else{
-        window.eel.py_run_process(modelName, tileSize, scale, isSkipAlpha, resizeTo, inputType, inputImage, outputPath, GPUID)
-    }  
+    else {
+        return (
+            <Typography sx={{ margin: '0px 0px', fontSize: '0.96em' }}>{singleProgressText}</Typography>
+        )
+    }
 }
-async function getModelList(algoName) {
-    if (devMode){
+
+async function getModelList(algoName, webDevMode) {
+    if (webDevMode) {
         // for dev
         let dummyData;
         if (algoName === "real-esrgan") {
-            dummyData = ["esrgan model1", "model2", "model3"]
+            dummyData = ["esrgan model1", "x4_jp_Illustration-fix1-d", "x2_jp_Illustration-fix1-d"]
         }
         else if (algoName === "real-hatgan") {
             dummyData = ["hatgan model1", "model2", "model3"]
         }
         return dummyData
     }
-    else{
+    else {
         return await window.eel.py_get_model_list(algoName)()
-    }  
+    }
 }
+function InferenceUI({ algoName, webDevMode, texts }) {
 
-function InferenceUI({ algoName }) {
     // AlgoName : real-esrgan or real-hatgan
     var algoTitle;
     if (algoName === "real-esrgan") {
@@ -51,26 +55,53 @@ function InferenceUI({ algoName }) {
     // process state Alert
     let stateAlert;
     const [processState, setProcessState] = useState("idle");
-    
-    function handleSetProcessState(state){
+
+    function handleSetProcessState(state) {
         setProcessState(state)
-        if (state==='finish'){
+        if (state === 'finish') {
             setInfering(false)
         }
     }
     function handleAlertClose() {
         setProcessState('idle')
     }
+
     if (processState === "finish") {
         stateAlert = <Alert severity="success" onClose={() => { handleAlertClose() }}
-        >Your image has been processed.</Alert>;
+        >{texts.inferAlertFinish}</Alert>;
     }
     else if (processState === "error") {
         stateAlert = <Alert severity="error" onClose={() => { handleAlertClose() }}
-        >An error occurred while processing your image.</Alert>;
+        >{texts.inferAlertError}</Alert>;
     }
     else if (processState === "idle") {
         stateAlert = <></>
+    }
+    else if (processState === "missing param") {
+        stateAlert = <Alert severity="info" onClose={() => { handleAlertClose() }}
+        >{texts.inferAlertMissingParam}</Alert>;
+    }
+    function checkInput(modelName, inputImage, outputPath) {
+        if (!modelName || !inputImage || !outputPath) {
+            setInfering(false);
+            setProcessState('missing param');
+            return false
+        }
+        else {
+            return true
+        }
+    }
+
+    function runProcess(modelName, tileSize, scale, isSkipAlpha, resizeTo, inputType, inputImage, outputPath, GPUID) {
+        if (webDevMode) {
+            // for dev
+            console.log(modelName, tileSize, scale, isSkipAlpha, resizeTo, inputType, inputImage, outputPath, GPUID)
+        }
+        else {
+            if (checkInput(modelName, inputImage, outputPath)) {
+                window.eel.py_run_process(modelName, tileSize, scale, isSkipAlpha, resizeTo, inputType, inputImage, outputPath, GPUID,algoName)
+            }
+        }
     }
     // Options
     const [modelOptions, setModelOptions] = useState([])
@@ -87,26 +118,33 @@ function InferenceUI({ algoName }) {
     const [inputImage, setInputImage] = useState('');
     const [outputPath, setOutputPath] = useState('');
     const [progress, setProgress] = useState(0);
+    const [singleProgressText, setSingleProgressText] = useState('0% ETR:--:--:--');
+    const [totalProgressText, setTotalProgressText] = useState('0% ETR:--:--:--');
     const [GPUID, setGPUID] = useState(0);
-    const [infering, setInfering] = useState(false)
+    const [infering, setInfering] = useState(false);
+    let inputText = texts.inferInputImage;
+    if (inputType === 'Folder') {
+        inputText = texts.inferInputFolder;
+    }
     // Backend communication
     useEffect(() => {
         // Runs ONCE after initial rendering
-            getModelList(algoName).then(result => {setModelOptions(result)})
+        getModelList(algoName, webDevMode).then(result => { setModelOptions(result) })
         console.log('Effect run ' + algoName)
-    }, [algoName]);
-    // 
-    if (!devMode){
-        window.eel.expose(handleSetProgress,'handleSetProgress');
-        window.eel.expose(handleSetProcessState,'handleSetProcessState');
-        window.eel.expose(showError,'showError');
+    }, [algoName, webDevMode]);
+    if (!webDevMode) {
+        window.eel.expose(handleSetProgress, 'handleSetProgress');
+        window.eel.expose(handleSetProcessState, 'handleSetProcessState');
+        window.eel.expose(showError, 'showError');
     }
-    function showError(errorText){
+    function showError(errorText) {
         window.electronAPI.showError(errorText);
         setProcessState('idle');
     }
-    function handleSetProgress(progress) {
-        setProgress(progress)
+    function handleSetProgress(progressNum, singleProgressText, totalProgressText) {
+        setProgress(progressNum);
+        setSingleProgressText(singleProgressText);
+        setTotalProgressText(totalProgressText)
     }
     async function handleInputSelect() {
         let input;
@@ -138,26 +176,37 @@ function InferenceUI({ algoName }) {
         // Avoid ordering Fried Rice
         setInputImage('');
     }
+    function handelSetModelName(modelName) {
+        setModelName(modelName);
+        // Automatically synchronize Scale based on model name
+        const match = modelName.match(/x(\d+)_/);
+
+        if (match) {
+            const numberStr = match[1];
+            const number = parseInt(numberStr);
+            setScale(number)
+        }
+    }
     return (
         <div className='InferUI'>
             {algoTitle}
             <div className="ConfigureArea">
                 <div className="ModelConfig">
-                    <h4>Model Config</h4>
+                    <h4>{texts.inferModelConfig}</h4>
                     <Box
                         sx={{
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between'
                         }}>
-                        <Typography sx={{ margin: '15px 0px' }}>Model:</Typography>
+                        <Typography sx={{ margin: '15px 0px' }}>{texts.inferModel}</Typography>
                         <Autocomplete
                             disablePortal
                             id="modelFile"
                             options={modelOptions}
                             sx={{ flexGrow: 1 }}
                             onChange={(event, newValue) => {
-                                setModelName(newValue);
+                                handelSetModelName(newValue);
                             }}
                             renderInput={(params) => <TextField {...params} variant='standard' />}
                         />
@@ -169,7 +218,7 @@ function InferenceUI({ algoName }) {
                             justifyContent: 'space-between'
 
                         }}>
-                        <Typography sx={{ margin: '15px 0px', marginRight: '2%' }}>Tile Size:</Typography>
+                        <Typography sx={{ margin: '15px 0px', marginRight: '2%' }}>{texts.inferTileSize}</Typography>
                         <Slider size='small' aria-label="Small" defaultValue={64}
                             valueLabelDisplay="auto" step={64} min={64} max={640} color='lightBlue'
                             onChange={(event, newValue) => { setTileSize(newValue) }}
@@ -182,7 +231,7 @@ function InferenceUI({ algoName }) {
                             alignItems: 'center',
                             justifyContent: 'space-between'
                         }}>
-                        <Typography sx={{ margin: '15px 0px', paddingRight: '5.6%' }}>Scale:</Typography>
+                        <Typography sx={{ margin: '15px 0px', marginRight: '2%' }}>{texts.inferScale}</Typography>
                         <Slider size='small' aria-label="Small" defaultValue={4}
                             valueLabelDisplay="auto" step={1} min={1} max={16} color='lightBlue'
                             // sx={{ flexGrow: 0.5 }} 
@@ -202,19 +251,19 @@ function InferenceUI({ algoName }) {
                                 alignItems: 'center',
                                 justifyContent: 'space-between'
                             }}>
-                            <Typography sx={{ margin: '15px 0px' }}>SkipAlpha:</Typography>
+                            <Typography sx={{ margin: '15px 0px' }}>{texts.inferSkipAlpha}</Typography>
                             <Checkbox size="small" sx={{ top: '1px' }} onChange={(event) => { setIsSkipAlpha(event.target.checked) }} />
                             {/* <Typography sx={{ margin: '15px 0px' }}>{isFP32+""}</Typography> */}
                         </Box>
 
-                        <Typography sx={{ margin: '15px 0px' }}>Resize To:</Typography>
+                        <Typography sx={{ margin: '15px 0px' }}>{texts.inferResizeTo}</Typography>
                         <Autocomplete
                             disablePortal
                             freeSolo
                             id="modelFile"
                             options={['1920x1080', '1280x720', '1/2']}
                             sx={{ flexGrow: 1 }}
-                            onInputChange={(event, value,reason) => { setResizeTo(value) }}
+                            onInputChange={(event, value, reason) => { setResizeTo(value) }}
                             onChange={(event, value) => { setResizeTo(value) }}
                             renderInput={(params) => <TextField {...params} variant='standard' />}
                         />
@@ -224,7 +273,7 @@ function InferenceUI({ algoName }) {
                     {/* <TextField id="standard-basic" label="Height" variant="standard" disabled={true} /> */}
                 </div>
                 <div className="Processor">
-                    <h4>Process Image</h4>
+                    <h4>{texts.inferProcessImage}</h4>
                     <Box
                         sx={{
                             display: 'flex',
@@ -233,12 +282,12 @@ function InferenceUI({ algoName }) {
 
                         }}>
                         {/* <p>Input Image:</p> */}
-                        <Typography sx={{ margin: '15px 0px' }}>Input {inputType}:</Typography>
+                        <Typography sx={{ margin: '15px 0px' }}>{inputText}</Typography>
                         <TextField id="input-image" variant="standard" sx={{ margin: '10px 5px', flexGrow: 1 }}
                             value={inputImage} />
                         <Button variant="outlined" sx={{ width: '15%' }}
                             onClick={handleInputSelect}
-                        >Select</Button>
+                        >{texts.inferSelectButton}</Button>
                     </Box>
                     <Box
                         sx={{
@@ -248,9 +297,9 @@ function InferenceUI({ algoName }) {
 
                         }}>
                         {/* <p>Save To:</p> */}
-                        <Typography sx={{ margin: '15px 0px' }}>Save To:</Typography>
+                        <Typography sx={{ margin: '15px 0px' }}>{texts.inferSaveTo}</Typography>
                         <TextField id="output-path" variant="standard" sx={{ margin: '10px 5px', flexGrow: 1 }} value={outputPath} />
-                        <Button variant="outlined" sx={{ width: '15%' }} onClick={handleOutputSelect}>Select</Button>
+                        <Button variant="outlined" sx={{ width: '15%' }} onClick={handleOutputSelect}>{texts.inferSelectButton}</Button>
                     </Box>
                     <Box
                         sx={{
@@ -260,10 +309,15 @@ function InferenceUI({ algoName }) {
 
                         }}>
                         {/* <p>Progress:</p> */}
-                        <Typography sx={{ margin: '15px 0px' }}>Progress:</Typography>
+                        <Typography sx={{ margin: '15px 0px' }}>{texts.inferProgress}</Typography>
                         <LinearProgress variant="determinate" color='lightGreen' value={progress} sx={{ flexGrow: 1, top: '2px', height: '2px', margin: '0px 10px' }} />
                         {/* <p>50%</p> */}
-                        <Typography sx={{ margin: '15px 0px' }}>{progress}%</Typography>
+                        <ProgressTextDisplay
+                            singleProgressText={singleProgressText}
+                            totalProgressText={totalProgressText}
+                            isBatchProcess={isBatchProcess}
+                        ></ProgressTextDisplay>
+
                     </Box>
                     <Box
                         sx={{
@@ -273,8 +327,7 @@ function InferenceUI({ algoName }) {
 
                         }}>
 
-                        {/* <p>Batch Process:</p> */}
-                        <Typography sx={{ margin: '15px 0px' }}>Batch Process:</Typography>
+                        <Typography sx={{ margin: '15px 0px' }}>{texts.inferBatchProcess}</Typography>
                         <Checkbox size="small" sx={{ top: '1px', width: '10px', right: '3px' }}
                             onChange={(event) => { handelBatchProcessChange(event) }} />
                         <Typography sx={{ margin: '15px 0px' }}>GPU:</Typography>
@@ -284,12 +337,12 @@ function InferenceUI({ algoName }) {
                             loading={infering}
                             startIcon={<></>}
                             loadingPosition="start"
-                            onClick={() => { handleAlertClose();setInfering(true);runProcess(modelName, tileSize, scale, isSkipAlpha, resizeTo, inputType, inputImage, outputPath, GPUID) }}
-                        >Start</LoadingButton>
+                            onClick={() => { handleAlertClose(); setInfering(true); runProcess(modelName, tileSize, scale, isSkipAlpha, resizeTo, inputType, inputImage, outputPath, GPUID) }}
+                        >{texts.inferStartButton}</LoadingButton>
                     </Box>
                     {stateAlert}
                     <div className="Version">
-                        MoeSR Dev 0.0.1
+                        MoeSR Release 1.0.0
                     </div>
                 </div>
             </div>
