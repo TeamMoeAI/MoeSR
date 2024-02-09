@@ -81,7 +81,7 @@ MoeSR是一个专注于插画/Galgame CG等ACGN领域的图像超分辨率的应
 
 ## 开发&构建
 
-Todo...
+见[开发文档](doc/develop.md)
 
 ## 参考与引用
 
