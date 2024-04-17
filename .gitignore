@@ -192,6 +192,6 @@ webui/scripts
 *.woff2
 icon.png
 test_img
-models
+/models
 settings.json
 test.ipynb
