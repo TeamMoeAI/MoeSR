@@ -37,6 +37,7 @@ const contextMenuTargets = [
   'SystemFileAssociations\\.jpeg',
   'SystemFileAssociations\\.png',
   'SystemFileAssociations\\.webp',
+  'SystemFileAssociations\\.avif',
   'Directory',
 ]
 
@@ -463,7 +464,7 @@ async function getContextMenuStatus() {
   if (!supported) return { supported, registered: false }
 
   const keyStates = await Promise.all(getContextMenuKeys().map(registryKeyExists))
-  return { supported, registered: keyStates.every(Boolean) }
+  return { supported, registered: keyStates.some(Boolean) }
 }
 
 async function unregisterContextMenu() {
@@ -514,7 +515,7 @@ function registerIpcHandlers() {
     const result = await dialog.showOpenDialog({
       properties: mode === 'folder' ? ['openDirectory'] : ['openFile'],
       filters: mode === 'file'
-        ? [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp'] }]
+        ? [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'avif'] }]
         : [],
     })
 

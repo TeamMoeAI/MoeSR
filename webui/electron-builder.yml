@@ -21,6 +21,7 @@ extraResources:
     filter:
       - backend_server.py
       - frontend_bridge.py
+      - image_utils.py
       - moe_sr.py
       - onnx_infer.py
       - gpu_enum.py

@@ -1,8 +1,11 @@
 import onnxruntime as ort
-import cv2
 import numpy as np
 import math
 import time
+
+from PIL import Image
+
+from image_utils import image_from_array, resize_image
 
 
 class OnnxSRInfer:
@@ -42,7 +45,6 @@ class OnnxSRInfer:
         output_image = np.squeeze(img)
         output_image = np.transpose(output_image, (1, 2, 0))
         output_image = (output_image * 255.0).clip(0, 255).astype(np.uint8)
-        output_image = cv2.cvtColor(output_image, cv2.COLOR_RGB2BGR)
         return output_image
 
     def pre_process(self, img, tile_size, tile_pad):
@@ -57,7 +59,7 @@ class OnnxSRInfer:
             tuple: Padded image (np.array), padding height (int), padding width (int).
         """
         h, w, c = img.shape
-        
+
         pad_h = (tile_size - h % tile_size) % tile_size
         pad_w = (tile_size - w % tile_size) % tile_size
 
@@ -66,7 +68,7 @@ class OnnxSRInfer:
         img = np.pad(img,
                      ((tile_pad, pad_h + tile_pad), (tile_pad, pad_w + tile_pad), (0, 0)),
                      'reflect')
-                     
+
         return img, pad_h, pad_w
 
     def post_process(self, img, pad_h, pad_w, tile_pad):
@@ -81,13 +83,13 @@ class OnnxSRInfer:
             np.array: The processed image.
         """
         h, w, c = img.shape
-        
+
         # Calculate the crop boundaries
         top = tile_pad * self.scale
         left = tile_pad * self.scale
         bottom = h - (pad_h + tile_pad) * self.scale
         right = w - (pad_w + tile_pad) * self.scale
-        
+
         # Crop the image to remove all padding
         img = img[top:bottom, left:right, :]
         return img
@@ -120,7 +122,7 @@ class OnnxSRInfer:
         output_h = h * self.scale
         output_w = w * self.scale
         output_shape = (output_h, output_w, c)
-        
+
         # start with a black image
         output = np.zeros(output_shape, dtype=np.uint8)
 
@@ -154,12 +156,12 @@ class OnnxSRInfer:
                 crop_x_start = (x_start - x_start_pad) * self.scale
                 crop_y_end = crop_y_start + (y_end - y_start) * self.scale
                 crop_x_end = crop_x_start + (x_end - x_start) * self.scale
-                
+
                 cropped_tile_output = tile_output[crop_y_start:crop_y_end, crop_x_start:crop_x_end, :]
 
                 # Place the processed tile into the output image.
                 output[y_start * self.scale:y_end * self.scale, x_start * self.scale:x_end * self.scale, :] = cropped_tile_output
-                
+
                 # Update progress
                 tile_idx = y * tiles_x + x + 1
                 if self.progress_setter:
@@ -175,31 +177,41 @@ class OnnxSRInfer:
 
     def universal_process_pipeline(self, image, tile_size, tile_pad=8):
         img_mode = 'RGB'
-        
+
         # handle grayscale image
         if image.ndim == 2:
-            image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+            image = np.repeat(image[:, :, np.newaxis], 3, axis=2)
+        elif image.ndim != 3:
+            raise ValueError(f'Unsupported image shape: {image.shape}')
+
         h, w, c = image.shape
         # handle RGBA image
         if c == 4:
             img_mode = 'RGBA'
             alpha = image[:, :, 3]
             image = image[:, :, 0:3]
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             if self.alpha_upsampler == 'sr model':
-                alpha = cv2.cvtColor(alpha, cv2.COLOR_GRAY2RGB)
-        else:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                alpha = np.repeat(alpha[:, :, np.newaxis], 3, axis=2)
+        elif c != 3:
+            raise ValueError(f'Unsupported image channel count: {c}')
+
         # process image (without alpha channel)
         output_img = self.rgb_process_pipeline(image, tile_size, tile_pad)
         # process alpha channel
         if img_mode == 'RGBA':
             if self.alpha_upsampler == 'sr model':
                 alpha_img = self.rgb_process_pipeline(alpha, tile_size, tile_pad)
-                output_alpha = cv2.cvtColor(alpha_img, cv2.COLOR_BGR2GRAY)
-            else:  # use the cv2 resize for alpha channel
-                output_alpha = cv2.resize(alpha, (w * self.scale, h * self.scale), interpolation=cv2.INTER_LINEAR)
+                output_alpha = np.array(
+                    image_from_array(alpha_img).convert('L'),
+                    dtype=np.uint8,
+                    copy=True,
+                )
+            else:
+                output_alpha = resize_image(
+                    alpha,
+                    (w * self.scale, h * self.scale),
+                    Image.Resampling.BILINEAR,
+                )
             # merge the alpha channel
-            output_img = cv2.cvtColor(output_img, cv2.COLOR_BGR2BGRA)
-            output_img[:, :, 3] = output_alpha
+            output_img = np.dstack((output_img, output_alpha))
         return output_img

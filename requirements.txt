@@ -1,5 +1,5 @@
 onnxruntime-directml
-opencv-python
+numpy
 websockets
-Pillow
+Pillow>=11.3.0
 pyoxipng

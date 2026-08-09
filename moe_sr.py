@@ -8,14 +8,12 @@ from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
 
-import cv2
-import numpy as np
 import oxipng
 from PIL import Image
 
-from onnx_infer import OnnxSRInfer
 from gpu_enum import GPUEnum, select_better_gpu
-
+from image_utils import image_from_array, load_image, resize_image
+from onnx_infer import OnnxSRInfer
 
 logger = logging.getLogger("moesr.moe_sr")
 
@@ -152,7 +150,7 @@ DEFAULT_SETTINGS = {
     "webpCompressionLevel": 80,
     "quickWorkflowName": "",
 }
-SUPPORTED_INPUT_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+SUPPORTED_INPUT_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".avif"}
 SLIDING_WINDOW_SIZE = 5
 
 
@@ -422,7 +420,7 @@ class MoeSRService:
             sr_instance, model = self.sr_manager.get_instance(
                 modelName, algoName, int(real_gpu_id), self._progress_setter
             )
-            sr_instance.alpha_upsampler = "interpolation" if isSkipAlpha else "default"
+            sr_instance.alpha_upsampler = "interpolation" if isSkipAlpha else "sr model"
 
             if inputType == "Folder":
                 input_folder = Path(inputImage)
@@ -439,7 +437,7 @@ class MoeSRService:
             for img_path in imgs_in:
                 self.progress_state = {"last_progress": None, "last_time": None}
 
-                img = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
+                img = load_image(img_path)
                 if img is None:
                     logger.warning("Unable to load image; skipped: %s", img_path)
                     sr_instance.processed_img_num += 1
@@ -477,12 +475,16 @@ class MoeSRService:
                     # need to use the final image after super-resolution
                     if sr_w > target_w:
                         # reduce
-                        img_out = cv2.resize(
-                            sr_img, (target_w, target_h), interpolation=cv2.INTER_AREA
+                        img_out = resize_image(
+                            sr_img,
+                            (target_w, target_h),
+                            Image.Resampling.BOX,
                         )
                     else:
-                        img_out = cv2.resize(
-                            sr_img, (target_w, target_h), interpolation=cv2.INTER_LANCZOS4
+                        img_out = resize_image(
+                            sr_img,
+                            (target_w, target_h),
+                            Image.Resampling.LANCZOS,
                         )
                 else:
                     img_out = sr_img
@@ -579,7 +581,7 @@ class MoeSRService:
             for img_path in imgs_in:
                 self.progress_state = {"last_progress": None, "last_time": None}
 
-                img = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
+                img = load_image(img_path)
                 if img is None:
                     logger.warning("Unable to load image; skipped: %s", img_path)
                     processed_img_num += 1
@@ -642,7 +644,7 @@ class MoeSRService:
                         sr_instance, model = active_sr_manager.get_instance(
                             model_name, algo_name, int(real_gpu_id), progress_callback
                         )
-                        sr_instance.alpha_upsampler = "interpolation" if skip_alpha else "default"
+                        sr_instance.alpha_upsampler = "interpolation" if skip_alpha else "sr model"
                         sr_instance.total_img_num = 1
                         sr_instance.processed_img_num = 0
 
@@ -660,12 +662,16 @@ class MoeSRService:
                             if result:
                                 target_w, target_h = result
                                 if w > target_w:
-                                    img = cv2.resize(
-                                        img, (target_w, target_h), interpolation=cv2.INTER_AREA
+                                    img = resize_image(
+                                        img,
+                                        (target_w, target_h),
+                                        Image.Resampling.BOX,
                                     )
                                 else:
-                                    img = cv2.resize(
-                                        img, (target_w, target_h), interpolation=cv2.INTER_LANCZOS4
+                                    img = resize_image(
+                                        img,
+                                        (target_w, target_h),
+                                        Image.Resampling.LANCZOS,
                                     )
                         current_index += 1
 
@@ -855,12 +861,13 @@ class ImageSavePipeline:
 
     @staticmethod
     def _encode_png(image, compression_level=1):
-        success, encoded = cv2.imencode(
-            ".png", image, [cv2.IMWRITE_PNG_COMPRESSION, compression_level]
+        output = BytesIO()
+        image_from_array(image).save(
+            output,
+            format="PNG",
+            compress_level=compression_level,
         )
-        if not success:
-            raise RuntimeError("Failed to encode PNG image")
-        return encoded.tobytes()
+        return output.getvalue()
 
     def _encode_image(self, image):
         encoder = self.encoding["encoder"]
@@ -873,21 +880,12 @@ class ImageSavePipeline:
                 data = oxipng.optimize_from_memory(data, level=level)
             return data
 
-        if image.ndim == 2:
-            pillow_image = image
-        elif image.shape[2] == 3:
-            pillow_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        elif image.shape[2] == 4:
-            pillow_image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA)
-        else:
-            raise ValueError(f"Unsupported image channel count: {image.shape[2]}")
-
         height, width = image.shape[:2]
         if width > 16383 or height > 16383:
             raise ValueError("WebP width and height must not exceed 16383 pixels")
 
         output = BytesIO()
-        Image.fromarray(pillow_image).save(
+        image_from_array(image).save(
             output,
             format="WEBP",
             lossless=True,

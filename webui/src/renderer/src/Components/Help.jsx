@@ -6,7 +6,7 @@ function Help({ language }) {
                 <strong>帮助（简体中文）</strong>
                 <p>1. 使用方法</p>
                 <ul>
-                    <li>选择待处理图片与保存位置（待处理图片可选单张图片或者整个文件夹）</li>
+                    <li>选择待处理图片与保存位置（支持 JPG、PNG、WebP、AVIF 输入，可选单张图片或整个文件夹；输出格式由编码器设置决定）</li>
                     <li>选择模型，如果有需要，展开高级设置进行更多配置</li>
                     <li>点击开始处理，等待完成</li>
                 </ul>
@@ -73,7 +73,7 @@ function Help({ language }) {
                 <strong>Help (English)</strong>
                 <p>1. How to Use</p>
                 <ul>
-                    <li>Select the image(s) to process and the output location (you can choose a single image or an entire folder).</li>
+                    <li>Select the image(s) and output location (JPG, PNG, WebP, and AVIF inputs are supported; the output format is controlled by the encoder setting).</li>
                     <li>Select a model. If needed, expand the Advanced Settings for further configuration.</li>
                     <li>Click Start and wait for the process to complete.</li>
                 </ul>

@@ -209,3 +209,4 @@ plans/
 settings.json
 workflows/
 benchmark_resize.py
+tests/
