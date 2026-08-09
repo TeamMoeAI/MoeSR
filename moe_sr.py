@@ -1,15 +1,17 @@
+import json
+import logging
 import math
 import os
-import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
-import json
-import time
 
-import numpy as np
 import cv2
+import numpy as np
+import oxipng
+from PIL import Image
 
 from onnx_infer import OnnxSRInfer
 from gpu_enum import GPUEnum, select_better_gpu
@@ -851,24 +853,23 @@ class ImageSavePipeline:
     def output_extension(self):
         return ".webp" if self.encoding["encoder"] == "webp" else ".png"
 
+    @staticmethod
+    def _encode_png(image, compression_level=1):
+        success, encoded = cv2.imencode(
+            ".png", image, [cv2.IMWRITE_PNG_COMPRESSION, compression_level]
+        )
+        if not success:
+            raise RuntimeError("Failed to encode PNG image")
+        return encoded.tobytes()
+
     def _encode_image(self, image):
         encoder = self.encoding["encoder"]
         level = self.encoding["level"]
 
         if encoder in {"png", "oxipng"}:
             png_level = level if encoder == "png" else 1
-            success, encoded = cv2.imencode(
-                ".png", image, [cv2.IMWRITE_PNG_COMPRESSION, png_level]
-            )
-            if not success:
-                raise RuntimeError("Failed to encode PNG image")
-
-            data = encoded.tobytes()
+            data = self._encode_png(image, png_level)
             if encoder == "oxipng":
-                try:
-                    import oxipng
-                except ImportError as error:
-                    raise RuntimeError("OxiPNG encoder is not installed") from error
                 data = oxipng.optimize_from_memory(data, level=level)
             return data
 
@@ -885,11 +886,6 @@ class ImageSavePipeline:
         if width > 16383 or height > 16383:
             raise ValueError("WebP width and height must not exceed 16383 pixels")
 
-        try:
-            from PIL import Image
-        except ImportError as error:
-            raise RuntimeError("WebP encoder is not installed") from error
-
         output = BytesIO()
         Image.fromarray(pillow_image).save(
             output,
@@ -901,8 +897,19 @@ class ImageSavePipeline:
         )
         return output.getvalue()
 
-    def _save_image(self, image, output_path):
-        data = self._encode_image(image)
+    @staticmethod
+    def _get_unique_fallback_path(output_path):
+        fallback_path = output_path.with_suffix(".png")
+        counter = 1
+        while fallback_path.exists():
+            fallback_path = fallback_path.with_name(
+                f"{output_path.stem}_{counter}.png"
+            )
+            counter += 1
+        return fallback_path
+
+    @staticmethod
+    def _write_image(data, output_path):
         temporary_path = output_path.with_name(
             f".{output_path.name}.{time.time_ns()}.tmp"
         )
@@ -912,6 +919,27 @@ class ImageSavePipeline:
             os.replace(temporary_path, output_path)
         finally:
             temporary_path.unlink(missing_ok=True)
+
+    def _save_image(self, image, output_path):
+        encoder = self.encoding["encoder"]
+        try:
+            data = self._encode_image(image)
+        except Exception as error:
+            if encoder not in {"webp", "oxipng"}:
+                raise
+
+            fallback_path = self._get_unique_fallback_path(output_path)
+            fallback_data = self._encode_png(image)
+            self._write_image(fallback_data, fallback_path)
+            logger.warning(
+                "%s encoding failed; saved as regular PNG: %s",
+                encoder.upper(),
+                fallback_path,
+                exc_info=(type(error), error, error.__traceback__),
+            )
+            return
+
+        self._write_image(data, output_path)
 
     def wait(self):
         pending = self.pending
