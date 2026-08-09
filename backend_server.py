@@ -1,15 +1,18 @@
 import argparse
 import asyncio
 import json
+import logging
 from pathlib import Path
 
 from websockets.asyncio.server import serve
 
 import moe_sr
+from app_logging import configure_logging
 from frontend_bridge import frontend
 
 PROCESS_METHODS = {'py_run_process', 'py_run_workflow', 'py_run_quick_workflow'}
 process_lock = asyncio.Lock()
+logger = logging.getLogger('moesr.backend')
 
 
 def call_api(service, method, params):
@@ -83,6 +86,7 @@ async def handle_request(service, message, outbox):
             'result': result,
         })
     except Exception as error:
+        logger.exception('Backend request failed: method=%s', method)
         await outbox.put({
             'type': 'response',
             'id': request_id,
@@ -135,7 +139,7 @@ async def run_server(port, data_dir):
             port,
             max_size=4 * 1024 * 1024,
     ) as server:
-        print(f'MOESR_BACKEND_READY {port}', flush=True)
+        logger.info('Backend ready on ws://127.0.0.1:%s', port)
         await server.serve_forever()
 
 
@@ -145,7 +149,9 @@ def main():
     parser.add_argument('--data-dir', type=Path, default="MoeSRData")
     args = parser.parse_args()
 
-    asyncio.run(run_server(args.port, args.data_dir.resolve()))
+    data_dir = args.data_dir.resolve()
+    configure_logging(data_dir, frontend)
+    asyncio.run(run_server(args.port, data_dir))
 
 
 if __name__ == '__main__':

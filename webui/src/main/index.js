@@ -70,6 +70,7 @@ const allowedMethods = new Set([
 const allowedCallbacks = new Set([
   'handleSetProgress',
   'showError',
+  'showWarning',
   'handleSetProcessState',
 ])
 
@@ -257,6 +258,15 @@ function setupBackendSocket(socket) {
       message.type === 'js_call' &&
       allowedCallbacks.has(message.name)
     ) {
+      if (message.name === 'showWarning') {
+        void dialog.showMessageBox({
+          type: 'warning',
+          title: 'Warning',
+          message: String(message.args?.[0] || 'Python backend warning'),
+        })
+        return
+      }
+
       if (activeProcessSource === 'quick') {
         updateQuickStateFromBackend(message)
       } else if (mainWindow && !mainWindow.isDestroyed()) {

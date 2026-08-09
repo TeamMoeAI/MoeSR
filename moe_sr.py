@@ -1,6 +1,6 @@
 import math
 import os
-import traceback
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from io import BytesIO
@@ -13,6 +13,9 @@ import cv2
 
 from onnx_infer import OnnxSRInfer
 from gpu_enum import GPUEnum, select_better_gpu
+
+
+logger = logging.getLogger("moesr.moe_sr")
 
 
 class ModelInfo:
@@ -44,8 +47,8 @@ class ModelManager:
                 if "fp16" in model_file.stem:
                     precision = "fp16"
                 models.append(ModelInfo(model_file.stem, model_file, scale, algo_name, precision))
-            except:
-                print(f"Skip unresolvable model paths: {model_file}")
+            except Exception:
+                logger.warning("Skipping unresolvable model path: %s", model_file, exc_info=True)
                 continue
         return models
 
@@ -72,7 +75,7 @@ class SRManager:
         model_info: ModelInfo = self.model_manager.find_model(model_name, algo_name)
         if (self._sr_instance is None or self._current_model_path != model_info.path or self._current_gpuid != gpuid):
 
-            print(f"Creating/Switching an SR Instance. Model: {model_info.path}, GPU ID: {gpuid}")
+            logger.info("Creating/switching SR instance: model=%s, gpu=%s", model_info.path, gpuid)
             if self._sr_instance:
                 del self._sr_instance
 
@@ -111,7 +114,7 @@ class WorkflowSRManager:
         cache_key = (model_info.path, gpuid)
 
         if cache_key not in self._sr_instances:
-            print(f"Creating SR Instance for cache. Model: {model_info.path}, GPU ID: {gpuid}")
+            logger.info("Creating cached SR instance: model=%s, gpu=%s", model_info.path, gpuid)
             provider_options = [{"device_id": gpuid}] if gpuid >= 0 else None
             self._sr_instances[cache_key] = OnnxSRInfer(
                 model_info.path,
@@ -124,7 +127,7 @@ class WorkflowSRManager:
         else:
             # Update progress_setter for existing instance
             self._sr_instances[cache_key].progress_setter = progress_setter
-            print(f"Reusing cached SR Instance. Model: {model_info.path}, GPU ID: {gpuid}")
+            logger.debug("Reusing cached SR instance: model=%s, gpu=%s", model_info.path, gpuid)
 
         return self._sr_instances[cache_key], model_info
 
@@ -174,8 +177,8 @@ class MoeSRService:
             gpu_enumerator = GPUEnum()
             self.gpu_dict = gpu_enumerator.gpu_dict()
             self.gpu_list = gpu_enumerator.gpu_list()
-        except:
-            print("gpu enmuerate failed.")
+        except Exception:
+            logger.warning("GPU enumeration failed; using fallback GPU IDs", exc_info=True)
             self.gpu_dict = None
             self.gpu_list = [str(i) for i in range(16)]
 
@@ -288,9 +291,6 @@ class MoeSRService:
         # Use same callback as normal inference
         self.frontend.handleSetProgress(step_percent, progress_str, total_progress_str)
 
-    def _show_error(self, error_text):
-        self.frontend.showError(error_text)
-
     def _set_process_state(self, state):
         self.frontend.handleSetProcessState(state)
 
@@ -346,7 +346,8 @@ class MoeSRService:
             with open(self.settings_path, "w", encoding="utf-8") as f:
                 json.dump(new_settings, f, ensure_ascii=False, indent=4)
             return 0
-        except Exception as e:
+        except Exception:
+            logger.exception("Failed to save settings")
             return -1
 
     def py_get_workflow_list(self):
@@ -366,8 +367,8 @@ class MoeSRService:
                 with open(workflow_path, "r", encoding="utf-8") as f:
                     return json.load(f)
             return None
-        except Exception as e:
-            print(f"Error loading workflow {name}: {e}")
+        except Exception:
+            logger.exception("Failed to load workflow: %s", name)
             return None
 
     def py_save_workflow(self, name, data):
@@ -379,8 +380,8 @@ class MoeSRService:
             with open(workflow_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
             return True
-        except Exception as e:
-            print(f"Error saving workflow {name}: {e}")
+        except Exception:
+            logger.exception("Failed to save workflow: %s", name)
             return False
 
     def py_run_process(
@@ -438,7 +439,7 @@ class MoeSRService:
 
                 img = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
                 if img is None:
-                    print(f"Unable to load image {img_path}, skipped.")
+                    logger.warning("Unable to load image; skipped: %s", img_path)
                     sr_instance.processed_img_num += 1
                     continue
 
@@ -511,11 +512,9 @@ class MoeSRService:
             save_pipeline.wait()
             self._set_process_state("finish")
 
-        except Exception as e:
+        except Exception:
             self.sr_manager.reset()
-            error_message = traceback.format_exc()
-            print(error_message)
-            self._show_error(error_message)
+            logger.exception("Image processing failed")
             self._set_process_state("error")
         finally:
             if save_pipeline is not None:
@@ -580,7 +579,7 @@ class MoeSRService:
 
                 img = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
                 if img is None:
-                    print(f"Unable to load image {img_path}, skipped.")
+                    logger.warning("Unable to load image; skipped: %s", img_path)
                     processed_img_num += 1
                     continue
 
@@ -742,11 +741,9 @@ class MoeSRService:
             save_pipeline.wait()
             self._set_process_state("finish")
 
-        except Exception as e:
+        except Exception:
             active_sr_manager.reset()
-            error_message = traceback.format_exc()
-            print(error_message)
-            self._show_error(error_message)
+            logger.exception("Workflow execution failed")
             self._set_process_state("error")
         finally:
             if save_pipeline is not None:
@@ -941,8 +938,8 @@ def parse_resolution_str(resolution: str, w, h):
             target_w = int(parts[0])
             target_h = int(h * target_w / w)
             return (target_w, target_h)
-        except:
-            print(f"Invalid size parameter: {resolution}")
+        except (ValueError, IndexError):
+            logger.warning("Invalid size parameter: %s", resolution)
     elif "/" in resolution:
         parts = resolution.split("/")
         try:
@@ -952,5 +949,5 @@ def parse_resolution_str(resolution: str, w, h):
             target_w = int(w * ratio)
             target_h = int(h * ratio)
             return (target_w, target_h)
-        except:
-            print(f"Invalid scale parameter: {resolution}")
+        except (ValueError, IndexError, ZeroDivisionError):
+            logger.warning("Invalid scale parameter: %s", resolution)
