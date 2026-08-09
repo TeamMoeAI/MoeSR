@@ -1,3 +1,5 @@
 onnxruntime-directml
 opencv-python
-git+https://github.com/luoyily/Eel.git
+websockets
+Pillow
+pyoxipng

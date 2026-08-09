@@ -1,4 +1,5 @@
 import ctypes
+from pathlib import Path
 
 
 class GPUInfo(ctypes.Structure):
@@ -11,7 +12,8 @@ class GPUInfo(ctypes.Structure):
 
 class GPUEnum:
     def __init__(self):
-        self.gpu_lib = ctypes.WinDLL("./gpu_enum.dll")
+        dll_path = Path(__file__).resolve().with_name('gpu_enum.dll')
+        self.gpu_lib = ctypes.WinDLL(str(dll_path))
         self.max_gpus = 16
         self.gpu_array = (GPUInfo * self.max_gpus)()
         self.count = self.gpu_lib.GetGPUList(self.gpu_array, self.max_gpus)

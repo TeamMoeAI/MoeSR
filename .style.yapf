@@ -1,0 +1,9 @@
+[style]
+based_on_style = pep8
+
+column_limit = 120
+
+split_all_comma_separated_values = false
+split_before_first_argument = false
+split_before_named_assigns = false
+coalesce_brackets = true

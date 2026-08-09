@@ -1,0 +1,37 @@
+appId: moe.sr.desktop
+productName: MoeSR
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - out/**/*
+  - package.json
+
+asar: true
+
+extraResources:
+  - from: ../runtime
+    to: runtime
+    filter:
+      - "**/*"
+  - from: ..
+    to: python
+    filter:
+      - backend_server.py
+      - frontend_bridge.py
+      - moe_sr.py
+      - onnx_infer.py
+      - gpu_enum.py
+      - gpu_enum.dll
+extraFiles:
+  - from: ../MoeSRData/models
+    to: MoeSRData/models
+    filter:
+      - "Place models here.txt"
+
+win:
+  icon: build/icon.png
+  target:
+    - zip

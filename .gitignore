@@ -185,19 +185,27 @@ cython_debug/
 #.idea/
 
 # ---------------------------------Custom---------------------------------
-*.zip
-webui/config/
-webui/package-lock.json
-webui/scripts
+# binary
 *.woff2
-icon.png
+*.zip
+gpu_enum.dll
+
+# webui
+webui/config
+webui/scripts
+webui/build
+webui/resources
+
+# debug
 test_img
-/models
-settings.json
+other_docs/
+/MoeSRData
+/electronData
+/runtime
 test.ipynb
-webui_old/
 test.py
 .vscode/
-gpu_enum.dll
 plans/
+settings.json
 workflows/
+benchmark_resize.py

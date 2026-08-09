@@ -18,6 +18,17 @@ import SaveIcon from '@mui/icons-material/Save';
 import AddIcon from '@mui/icons-material/Add';
 import Alert from '@mui/material/Alert';
 import { SingleProgressBar } from './ProgressBar';
+import {
+    expose,
+    getAllModels,
+    getGpuList,
+    getWorkflowList,
+    loadWorkflow as loadBackendWorkflow,
+    openFileOrFolder,
+    runWorkflow as runBackendWorkflow,
+    saveWorkflow as saveBackendWorkflow,
+    showErrorDialog,
+} from '../api/backend-api';
 
 const NODE_TYPES = {
     inference: 'inference',
@@ -427,15 +438,15 @@ function WorkflowUI({ webDevMode, texts }) {
             setGpuOptions(['0', 'NVIDIA GeForce RTX 2060']);
             setWorkflowList(['Default', 'Upscale 4x']);
         } else {
-            window.eel.py_get_all_models()().then(setModels);
-            window.eel.py_get_gpu_list()().then(setGpuOptions);
-            refreshWorkflowList();
+            getAllModels().then(setModels);
+            getGpuList().then(setGpuOptions);
+            getWorkflowList().then(setWorkflowList);
         }
     }, [webDevMode]);
 
     const refreshWorkflowList = () => {
         if (!webDevMode) {
-            window.eel.py_get_workflow_list()().then(setWorkflowList);
+            getWorkflowList().then(setWorkflowList);
         }
     };
 
@@ -449,7 +460,7 @@ function WorkflowUI({ webDevMode, texts }) {
             return;
         }
 
-        const data = await window.eel.py_load_workflow(name)();
+        const data = await loadBackendWorkflow(name);
         if (data) {
             setInputConfig(data.input || { path: '', inputType: 'Image' });
             setOutputConfig(data.output || { path: '' });
@@ -477,7 +488,7 @@ function WorkflowUI({ webDevMode, texts }) {
                 setIsNewWorkflow(false);
             }
         } else {
-            const success = await window.eel.py_save_workflow(currentWorkflowName, workflowData)();
+            const success = await saveBackendWorkflow(currentWorkflowName, workflowData);
             if (success) {
                 refreshWorkflowList();
                 setIsNewWorkflow(false);
@@ -544,7 +555,7 @@ function WorkflowUI({ webDevMode, texts }) {
         if (type === 'input') {
             setAnchorEl(target);
         } else {
-            const result = await window.electronAPI.openFileOrFolder('folder');
+            const result = await openFileOrFolder('folder');
             if (result) {
                 setOutputConfig({ ...outputConfig, path: result.path });
             }
@@ -553,7 +564,7 @@ function WorkflowUI({ webDevMode, texts }) {
 
     const handleInputSelect = async (mode) => {
         setAnchorEl(null);
-        const result = await window.electronAPI.openFileOrFolder(mode);
+        const result = await openFileOrFolder(mode);
         if (result) {
             setInputConfig({
                 path: result.path,
@@ -627,7 +638,7 @@ function WorkflowUI({ webDevMode, texts }) {
             console.log('Running workflow:', workflowData);
         } else {
             setRunning(true);
-            window.eel.py_run_workflow(workflowData);
+            runBackendWorkflow(workflowData);
         }
     };
 
@@ -642,7 +653,7 @@ function WorkflowUI({ webDevMode, texts }) {
                     setProcessState('error');
                 }
             };
-            window.eel.expose(handleProcessState, 'handleSetProcessState');
+            const disposeState = expose(handleProcessState, 'handleSetProcessState');
             
             // Register progress callback (same as InferenceUI)
             const handleSetProgress = (progressNum, singleProgressText, totalProgressText) => {
@@ -650,14 +661,20 @@ function WorkflowUI({ webDevMode, texts }) {
                 setProgressText(singleProgressText);
                 setTotalProgressText(totalProgressText);
             };
-            window.eel.expose(handleSetProgress, 'handleSetProgress');
+            const disposeProgress = expose(handleSetProgress, 'handleSetProgress');
             
             // Register error callback
             const showError = (errorText) => {
-                window.electronAPI.showError(errorText);
+                showErrorDialog(errorText);
                 setProcessState('idle');
             };
-            window.eel.expose(showError, 'showError');
+            const disposeError = expose(showError, 'showError');
+
+            return () => {
+                disposeState();
+                disposeProgress();
+                disposeError();
+            };
         }
     }, [webDevMode]);
 

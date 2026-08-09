@@ -8,7 +8,9 @@ import { useState, useEffect } from 'react';
 import Help from './Components/Help';
 import About from './Components/About';
 import Settings from './Components/Settings';
+import QuickProcessWindow from './Components/QuickProcessWindow';
 import translations from './Language';
+import { getSettings as getBackendSettings } from './api/backend-api';
 var webDevMode = false;
 const theme = createTheme({
   typography: {
@@ -48,10 +50,11 @@ async function getSettings(webDevMode) {
       return dummyData
   }
   else {
-      return await window.eel.py_get_settings()()
+      return await getBackendSettings()
   }
 }
 function App() {
+  const isQuickMode = new URLSearchParams(window.location.search).get('mode') === 'quick';
   const [navigation, setNavigation] = useState('real-esrgan');
   const [lang,SetLang] = useState('English');
   const [alwaysShowAdvanced, setAlwaysShowAdvanced] = useState(false);
@@ -60,6 +63,7 @@ function App() {
   const [workflowKeepModels, setWorkflowKeepModels] = useState(false);
   const langMap = {'English':'en','简体中文':'zh'};
   useEffect(() => {
+    if (isQuickMode) return;
     getSettings(webDevMode).then(result => {
       SetLang(result['language']);
       if (result['alwaysShowAdvanced'] !== undefined) {
@@ -77,6 +81,14 @@ function App() {
     })
     console.log('Effect run ' + lang)
   }, []);// eslint-disable-line
+
+  if (isQuickMode) {
+    return (
+      <ThemeProvider theme={theme}>
+        <QuickProcessWindow />
+      </ThemeProvider>
+    );
+  }
   if (!(lang in langMap)){
     SetLang('English')
   }

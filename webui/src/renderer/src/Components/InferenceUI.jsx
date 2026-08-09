@@ -16,6 +16,16 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { SingleProgressBar } from './ProgressBar';
+import {
+    expose,
+    getGpuList as getBackendGpuList,
+    getModelList as getBackendModelList,
+    getSettings,
+    openFileOrFolder,
+    runProcess as runBackendProcess,
+    saveSettings,
+    showErrorDialog,
+} from '../api/backend-api';
 
 async function getModelList(algoName, webDevMode) {
     if (webDevMode) {
@@ -33,7 +43,7 @@ async function getModelList(algoName, webDevMode) {
         return dummyData
     }
     else {
-        return await window.eel.py_get_model_list(algoName)()
+        return await getBackendModelList(algoName)
     }
 }
 
@@ -41,7 +51,7 @@ async function getGPUList(webDevMode) {
     if (webDevMode) {
         return ['0', 'NVIDIA GeForce RTX 2060']
     } else {
-        return await window.eel.py_get_gpu_list()()
+        return await getBackendGpuList()
     }
 }
 
@@ -79,7 +89,7 @@ function InferenceUI({ algoName, webDevMode, texts, alwaysShowAdvanced, remember
             setInfering(false)
             // Save remembered options on success
             if (rememberOptions && !webDevMode) {
-                window.eel.py_get_settings()().then((settings) => {
+                getSettings().then((settings) => {
                     settings.rememberedGPU = GPUID;
                     // Save model per algorithm
                     if (!settings.rememberedModels) {
@@ -88,7 +98,7 @@ function InferenceUI({ algoName, webDevMode, texts, alwaysShowAdvanced, remember
                     settings.rememberedModels[algoName] = modelName;
                     settings.rememberedTileSize = tileSize;
                     settings.rememberedSkipAlpha = isSkipAlpha;
-                    window.eel.py_save_settings(settings);
+                    saveSettings(settings);
                 });
             }
         }
@@ -135,7 +145,7 @@ function InferenceUI({ algoName, webDevMode, texts, alwaysShowAdvanced, remember
         return true;
     }
 
-    function runProcess(modelName, tileSize, scale, isSkipAlpha, resizeTo, inputType, inputImage, outputPath, GPUID, scalingMode) {
+    function runProcess(modelName, tileSize, scale, isSkipAlpha, resizeTo, inputType, inputImage, outputPath, GPUID, scalingMode, targetResolution) {
         // Calculate actual output path
         let actualOutputPath = outputPath;
         if (!outputPath && defaultOutputPath) {
@@ -148,7 +158,20 @@ function InferenceUI({ algoName, webDevMode, texts, alwaysShowAdvanced, remember
         }
         else {
             if (checkInput(modelName, inputImage, actualOutputPath)) {
-                window.eel.py_run_process(modelName, tileSize, scale, isSkipAlpha, resizeTo, inputType, inputImage, actualOutputPath, GPUID, algoName, scalingMode)
+                runBackendProcess({
+                    modelName,
+                    tileSize,
+                    scale,
+                    isSkipAlpha,
+                    resizeTo: resizeTo || '',
+                    inputType,
+                    inputImage,
+                    outputPath: actualOutputPath,
+                    gpuid: GPUID,
+                    algoName,
+                    scalingMode,
+                    targetResolution,
+                });
             }
         }
     }
@@ -211,7 +234,7 @@ function InferenceUI({ algoName, webDevMode, texts, alwaysShowAdvanced, remember
         setModelName(null);
         
         if (rememberOptions && !webDevMode) {
-            window.eel.py_get_settings()().then((settings) => {
+            getSettings().then((settings) => {
                 if (settings.rememberedGPU !== undefined) {
                     setGPUID(settings.rememberedGPU);
                 }
@@ -228,13 +251,22 @@ function InferenceUI({ algoName, webDevMode, texts, alwaysShowAdvanced, remember
             });
         }
     }, [rememberOptions, webDevMode, algoName]);
-    if (!webDevMode) {
-        window.eel.expose(handleSetProgress, 'handleSetProgress');
-        window.eel.expose(handleSetProcessState, 'handleSetProcessState');
-        window.eel.expose(showError, 'showError');
-    }
+    useEffect(() => {
+        if (webDevMode) return undefined;
+
+        const disposeProgress = expose(handleSetProgress, 'handleSetProgress');
+        const disposeState = expose(handleSetProcessState, 'handleSetProcessState');
+        const disposeError = expose(showError, 'showError');
+
+        return () => {
+            disposeProgress();
+            disposeState();
+            disposeError();
+        };
+    }, [webDevMode, rememberOptions, GPUID, algoName, modelName, tileSize, isSkipAlpha]); // eslint-disable-line react-hooks/exhaustive-deps
+
     function showError(errorText) {
-        window.electronAPI.showError(errorText);
+        showErrorDialog(errorText);
         setProcessState('idle');
     }
     function handleSetProgress(progressNum, singleProgressText, totalProgressText) {
@@ -245,7 +277,7 @@ function InferenceUI({ algoName, webDevMode, texts, alwaysShowAdvanced, remember
     async function handleInputSelect(mode) {
         handleCloseMenu();
         let input;
-        const result = await window.electronAPI.openFileOrFolder(mode);
+        const result = await openFileOrFolder(mode);
         if (result) {
             setInputImage(result.path);
             if (result.type === 'directory') {
@@ -262,7 +294,7 @@ function InferenceUI({ algoName, webDevMode, texts, alwaysShowAdvanced, remember
     }
     async function handleOutputSelect() {
         let input;
-        const result = await window.electronAPI.openFileOrFolder('folder');
+        const result = await openFileOrFolder('folder');
         if (result) {
             setOutputPath(result.path);
         }
@@ -400,7 +432,7 @@ function InferenceUI({ algoName, webDevMode, texts, alwaysShowAdvanced, remember
                                             id="resizeTo"
                                             options={['1920x1080', '1280x720', '1/2']}
                                             fullWidth
-                                            onInputChange={(event, value, reason) => { setResizeTo(value) }}
+                                            onInputChange={(event, value) => { setResizeTo(value) }}
                                             onChange={(event, value) => { setResizeTo(value) }}
                                             renderInput={(params) => <TextField {...params} variant='standard' />}
                                             value={resizeTo || ''}
@@ -417,7 +449,7 @@ function InferenceUI({ algoName, webDevMode, texts, alwaysShowAdvanced, remember
                                             id="targetSize"
                                             options={['1920x1080', '1280x720', '3840x2160']}
                                             fullWidth
-                                            onInputChange={(event, value, reason) => { setTatgetSize(value) }}
+                                            onInputChange={(event, value) => { setTatgetSize(value) }}
                                             onChange={(event, value) => { setTatgetSize(value) }}
                                             renderInput={(params) => <TextField {...params} variant='standard' />}
                                             value={targetSize || ''}
@@ -447,7 +479,7 @@ function InferenceUI({ algoName, webDevMode, texts, alwaysShowAdvanced, remember
                                         id="gpuId"
                                         options={gpuOptions}
                                         fullWidth
-                                        onInputChange={(event, value, reason) => { setGPUID(value) }}
+                                        onInputChange={(event, value) => { setGPUID(value) }}
                                         onChange={(event, value) => { setGPUID(value) }}
                                         renderInput={(params) => <TextField {...params} variant='standard' />}
                                         value={String(GPUID)}

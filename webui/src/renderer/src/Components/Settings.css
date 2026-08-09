@@ -1,0 +1,130 @@
+.SettingsContainer {
+    min-height: calc(100vh - 122px);
+    padding: 0 32px 48px;
+    color: #666;
+}
+
+.SettingsContent,
+.SettingsSaveBar {
+    width: 100%;
+    max-width: 1080px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.SettingsSection {
+    margin-top: 18px;
+}
+
+.SettingsSectionTitle {
+    margin: 0 0 8px !important;
+    padding-bottom: 7px;
+    border-bottom: 1px solid rgba(102, 102, 102, 0.18);
+    color: #666;
+    font-size: 1.02em !important;
+    font-weight: 400 !important;
+}
+
+.SettingsRow {
+    display: grid;
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 18px;
+    align-items: center;
+    min-height: 46px;
+}
+
+.SettingsLabel {
+    color: #666;
+}
+
+.SettingsSwitchRow {
+    min-height: 42px;
+}
+
+.SettingsMediumControl {
+    width: min(100%, 360px);
+}
+
+.SettingsWideControl {
+    width: min(100%, 620px);
+}
+
+.SettingsEncoderControl {
+    width: 220px;
+}
+
+.SettingsActionsRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 1px 0 7px 228px;
+}
+
+.SettingsCompressionSlider {
+    width: min(100%, 340px) !important;
+}
+
+.SettingsContextMenuControl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
+
+.SettingsStatus {
+    min-width: 62px;
+    color: #666;
+}
+
+.SettingsStatusRegistered {
+    color: #6cae4f;
+}
+
+.SettingsError {
+    margin: 4px 0 4px 228px !important;
+    color: #d45b5b;
+}
+
+.SettingsSaveBar {
+    position: sticky;
+    z-index: 3;
+    bottom: 22px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 64px;
+    margin-top: 16px;
+    padding: 10px 0 12px;
+    border-top: 1px solid rgba(102, 102, 102, 0.18);
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(6px);
+}
+
+.SettingsUnsavedMessage {
+    min-height: 1.5em;
+    color: #666;
+}
+
+@media (max-width: 760px) {
+    .SettingsContainer {
+        padding-right: 20px;
+        padding-left: 20px;
+    }
+
+    .SettingsRow {
+        grid-template-columns: 1fr;
+        gap: 2px;
+        padding: 6px 0;
+    }
+
+    .SettingsActionsRow,
+    .SettingsError {
+        margin-left: 0 !important;
+    }
+
+    .SettingsMediumControl,
+    .SettingsWideControl {
+        width: 100%;
+    }
+}

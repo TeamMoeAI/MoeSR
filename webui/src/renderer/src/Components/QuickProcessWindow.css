@@ -1,0 +1,67 @@
+.QuickProcessWindow {
+    min-height: 100vh;
+    color: #666;
+    overflow: hidden;
+}
+
+.QuickProcessContent {
+    position: relative;
+    z-index: 2;
+    padding: 22px 28px 16px;
+}
+
+.QuickProcessTitle {
+    font-size: 1.2em !important;
+    margin-bottom: 2px !important;
+}
+
+.QuickProcessStatus {
+    color: #7ecef4;
+    font-size: 0.88em !important;
+    margin-bottom: 14px !important;
+}
+
+.QuickProcessStatus.status-finish {
+    color: #75b85a;
+}
+
+.QuickProcessStatus.status-preview {
+    color: #a58ac7;
+}
+
+.QuickProcessStatus.status-error,
+.QuickProcessError {
+    color: #d45b5b;
+}
+
+.QuickProcessDetails {
+    margin-bottom: 8px;
+    font-size: 0.82em;
+}
+
+.QuickProcessDetails div {
+    display: flex;
+    min-width: 0;
+    line-height: 1.7;
+}
+
+.QuickProcessDetails span {
+    width: 72px;
+    flex: none;
+}
+
+.QuickProcessDetails strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 400;
+}
+
+.QuickProcessError {
+    max-height: 42px;
+    overflow: auto;
+    user-select: text;
+    font-size: 0.76em !important;
+    white-space: pre-wrap;
+}
