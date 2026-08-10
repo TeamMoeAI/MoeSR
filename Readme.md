@@ -14,7 +14,7 @@ v1.2.0:
 ## 关于
 
 MoeSR是一个专注于插画，CG，漫画等ACGN领域图像超分辨率与图像恢复工具，基于改进或自研的深度学习方法，对细节质量与清晰度有更贴近原图的表现。目标是追求更好的SR与IR效果。
-
+支持的系统与设备：Windows10 1903及以上，理论可以在大多数支持DX 12的GPU上运行，无GPU或不支持将使用CPU运行。
 软件截图：
 
 ![MoeSR-Screenshot](Readme.assets/MoeSR-Screenshot.png)
