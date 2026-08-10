@@ -88,14 +88,14 @@
 .SettingsSaveBar {
     position: sticky;
     z-index: 3;
-    bottom: 22px;
+    bottom: 0;
     box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-height: 64px;
+    min-height: 86px;
     margin-top: 16px;
-    padding: 10px 0 12px;
+    padding: 10px 0 34px;
     border-top: 1px solid rgba(102, 102, 102, 0.18);
     background: rgba(255, 255, 255, 0.94);
     backdrop-filter: blur(6px);
