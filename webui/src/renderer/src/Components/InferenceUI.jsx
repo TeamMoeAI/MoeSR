@@ -142,8 +142,8 @@ function InferenceUI({ algoName, webDevMode, texts, alwaysShowAdvanced, remember
         return parentFolder + separator + 'MoeSR_output';
     }
 
-    function checkInput(modelName, inputImage) {
-        if (!modelName || !inputImage) {
+    function checkInput(modelName, inputImage, outputPath) {
+        if (!modelName || !inputImage || !outputPath) {
             setInfering(false);
             setProcessState('missing param');
             return false;
@@ -163,7 +163,7 @@ function InferenceUI({ algoName, webDevMode, texts, alwaysShowAdvanced, remember
             console.log(modelName, tileSize, scale, isSkipAlpha, resizeTo, inputType, inputImage, actualOutputPath, GPUID, scalingMode)
         }
         else {
-            if (checkInput(modelName, inputImage)) {
+            if (checkInput(modelName, inputImage, actualOutputPath)) {
                 runBackendProcess({
                     modelName,
                     tileSize,
