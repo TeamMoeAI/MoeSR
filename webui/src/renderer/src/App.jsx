@@ -119,7 +119,7 @@ function App() {
         <Navbar setNavigation={setNavigation}></Navbar>
         {content}
         <div className="Version">
-            MoeSR Release 1.1.0
+            MoeSR Release 1.2.0
         </div>
       </ThemeProvider>
       

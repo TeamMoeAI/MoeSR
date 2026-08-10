@@ -34,6 +34,8 @@ function Help({ language }) {
                     <li>记忆常用推理选项：开启后将在成功完成推理时记录常用设置（GPU，算法对应模型，分块大小，跳过透明通道）</li>
                     <li>输出留空时保存至MoeSR_output：开启后输出留空将保存图像至输入图像文件夹下的MoeSR_output中</li>
                     <li>工作流中保持模型加载：工作流中包含多个模型时，不会从内存卸载，提高工作流运行速度，内存不足可关闭</li>
+                    <li>编码器与压缩等级：所有选项均保存无损图片，压缩等级越高体积往往越小但耗时更长。除Webp外，PNG与OxiPNG均保存标准PNG格式，后者是一个快速高效的压缩优化器</li>
+                    <li>右键菜单：此功能可以对特定格式图片与文件夹添加右键菜单，以便快捷处理。使用前需要指定一个工作流，然后点击注册右键菜单并保存设置生效。</li>
                 </ul>
 
                 <p>4. 高级设置</p>
@@ -101,6 +103,8 @@ function Help({ language }) {
                     <li>Remember Inference Options: When enabled, commonly used settings (GPU, algorithm corresponding model, tile size, skip alpha channel) will be recorded after a successful inference.</li>
                     <li>Output to MoeSR_output When empty: When enabled and the output field is left empty, images will be saved to the "MoeSR_output" folder inside the input image directory.</li>
                     <li>Keep Models Loaded in Workflow: When multiple models are included in a workflow, they will not be unloaded from memory, improving execution speed. Disable this option if memory is insufficient.</li>
+                    <li>Encoder and Compression Level: All options save lossless images; higher compression levels generally result in smaller file sizes but require more processing time. Aside from WebP, both PNG and OxiPNG save in the standard PNG format, with the latter serving as a fast, efficient compression optimizer.</li>
+                    <li>Context Menu: This feature adds a right-click menu option for specific image formats and folders, enabling quick processing. To use it, you must first specify a workflow, then click "Register" and save your settings to apply the changes.</li>
                 </ul>
                 <p>4. Advanced Settings</p>
                 <figure>

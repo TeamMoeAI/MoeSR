@@ -87,6 +87,9 @@ function InferenceUI({ algoName, webDevMode, texts, alwaysShowAdvanced, remember
         setProcessState(state)
         if (state === 'finish') {
             setInfering(false)
+            setProgress(100)
+            setSingleProgressText('100%')
+            setTotalProgressText('100%')
             // Save remembered options on success
             if (rememberOptions && !webDevMode) {
                 getSettings().then((settings) => {
@@ -101,6 +104,9 @@ function InferenceUI({ algoName, webDevMode, texts, alwaysShowAdvanced, remember
                     saveSettings(settings);
                 });
             }
+        }
+        else if (state === 'error') {
+            setInfering(false)
         }
     }
     function handleAlertClose() {
@@ -136,8 +142,8 @@ function InferenceUI({ algoName, webDevMode, texts, alwaysShowAdvanced, remember
         return parentFolder + separator + 'MoeSR_output';
     }
 
-    function checkInput(modelName, inputImage, outputPath) {
-        if (!modelName || !inputImage || !outputPath) {
+    function checkInput(modelName, inputImage) {
+        if (!modelName || !inputImage) {
             setInfering(false);
             setProcessState('missing param');
             return false;
@@ -157,7 +163,7 @@ function InferenceUI({ algoName, webDevMode, texts, alwaysShowAdvanced, remember
             console.log(modelName, tileSize, scale, isSkipAlpha, resizeTo, inputType, inputImage, actualOutputPath, GPUID, scalingMode)
         }
         else {
-            if (checkInput(modelName, inputImage, actualOutputPath)) {
+            if (checkInput(modelName, inputImage)) {
                 runBackendProcess({
                     modelName,
                     tileSize,

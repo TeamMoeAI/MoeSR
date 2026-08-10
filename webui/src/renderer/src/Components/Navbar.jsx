@@ -10,13 +10,13 @@ function Navbar({setNavigation}) {
                 </div> */}
 
                 <ul>
-                    <li><a href="/#" onClick={() => setNavigation('real-esrgan')}>Real-ESRGAN</a></li>
-                    <li><a href="/#" onClick={() => setNavigation('real-hatgan')}>Real-HATGAN</a></li>
-                    <li><a href="/#" onClick={() => setNavigation('moe-ir')}>MoeIR</a></li>
-                    <li><a href="/#" onClick={() => setNavigation('workflow')}>Workflow</a></li>
-                    <li><a href="/#" onClick={() => setNavigation('settings')}>Settings</a></li>
-                    <li><a href="/#" onClick={() => setNavigation('help')}>Help</a></li>
-                    <li><a href="/#" onClick={() => setNavigation('about')}>About</a></li>
+                    <li><a href="#" onClick={() => setNavigation('real-esrgan')}>Real-ESRGAN</a></li>
+                    <li><a href="#" onClick={() => setNavigation('real-hatgan')}>Real-HATGAN</a></li>
+                    <li><a href="#" onClick={() => setNavigation('moe-ir')}>MoeIR</a></li>
+                    <li><a href="#" onClick={() => setNavigation('workflow')}>Workflow</a></li>
+                    <li><a href="#" onClick={() => setNavigation('settings')}>Settings</a></li>
+                    <li><a href="#" onClick={() => setNavigation('help')}>Help</a></li>
+                    <li><a href="#" onClick={() => setNavigation('about')}>About</a></li>
                 </ul>
             </div>
         </div>

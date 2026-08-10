@@ -26,6 +26,7 @@ extraResources:
       - onnx_infer.py
       - gpu_enum.py
       - gpu_enum.dll
+      - app_logging.py
 extraFiles:
   - from: ../MoeSRData/models
     to: MoeSRData/models

@@ -294,6 +294,10 @@ class MoeSRService:
     def _set_process_state(self, state):
         self.frontend.handleSetProcessState(state)
 
+    def _set_process_finished(self, total_progress_text="100%"):
+        self.frontend.handleSetProgress(100, "100%", total_progress_text)
+        self._set_process_state("finish")
+
     def _parse_gpu_str(self, gpu):
         preset_ids = [str(i) for i in range(16)]
         if gpu in preset_ids:
@@ -429,6 +433,7 @@ class MoeSRService:
                 imgs_in = [Path(inputImage)]
 
             if not imgs_in:
+                self._set_process_finished()
                 return
 
             sr_instance.total_img_num = len(imgs_in)
@@ -514,7 +519,7 @@ class MoeSRService:
 
             self.frontend.handleSetProgress(100, "Saving image...", "100% ETR:--:--:--")
             save_pipeline.wait()
-            self._set_process_state("finish")
+            self._set_process_finished()
 
         except Exception:
             self.sr_manager.reset()
@@ -563,7 +568,7 @@ class MoeSRService:
                 imgs_in = [Path(input_path)]
 
             if not imgs_in:
-                self._set_process_state("finish")
+                self._set_process_finished()
                 return
 
             total_img_num = len(imgs_in)
@@ -747,7 +752,9 @@ class MoeSRService:
                 100, "Saving image...", f"{processed_img_num}/{total_img_num} (100%)"
             )
             save_pipeline.wait()
-            self._set_process_state("finish")
+            self._set_process_finished(
+                f"{processed_img_num}/{total_img_num} (100%)"
+            )
 
         except Exception:
             active_sr_manager.reset()
