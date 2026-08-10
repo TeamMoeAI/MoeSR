@@ -5,16 +5,23 @@
 v1.2.0: 
 
 > Update：支持更多图片格式处理（jpg, png, avif, webp）
+>
 > Update：支持更多图片编码器以及自定义压缩等级（png, oxipng, webp）
+>
 > Update：图片保存改为异步处理（在处理完当前图片后同时开始下一张图片处理与当前图片保存，避免在保存图片时GPU空闲）
+>
 > Update：增加右键菜单快速处理（设置中随时可选是否启用）
+>
 > Develop Update：移除eel，移除opencv，更换打包方式，优化设置页面排版，增加日志系统
+
 
 
 ## 关于
 
 MoeSR是一个专注于插画，CG，漫画等ACGN领域图像超分辨率与图像恢复工具，基于改进或自研的深度学习方法，对细节质量与清晰度有更贴近原图的表现。目标是追求更好的SR与IR效果。
+
 支持的系统与设备：Windows10 1903及以上，理论可以在大多数支持DX 12的GPU上运行，无GPU或不支持将使用CPU运行。
+
 软件截图：
 
 ![MoeSR-Screenshot](Readme.assets/MoeSR-Screenshot.png)
